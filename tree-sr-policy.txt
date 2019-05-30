@@ -1,0 +1,163 @@
+module: ietf-sr-policy
+  augment /rt:routing:
+    +--rw segment-routing
+       +--rw sr-policy
+          +--rw policy-attributes
+          |  +--rw segment-lists
+          |  |  +--rw segment-list* [name]
+          |  |     +--rw name        string
+          |  |     +--rw segments
+          |  |        +--rw segment* [index]
+          |  |           +--rw index            uint32
+          |  |           +--rw type?            sr-policy-types:segment-type
+          |  |           +--rw segment-types
+          |  |           |  +--rw segment-type-1
+          |  |           |  |  +--rw sid-value?   rt-types:mpls-label
+          |  |           |  +--rw segment-type-2
+          |  |           |  |  +--rw sid-value?   srv6-types:srv6-sid
+          |  |           |  +--rw segment-type-3
+          |  |           |  |  +--rw ipv4-address?   inet:ipv4-address
+          |  |           |  |  +--rw algorithm?      uint8
+          |  |           |  +--rw segment-type-4
+          |  |           |  |  +--rw ipv6-address?   inet:ipv6-address
+          |  |           |  |  +--rw algorithm?      uint8
+          |  |           |  +--rw segment-type-5
+          |  |           |  |  +--rw ipv4-address?           inet:ipv4-address
+          |  |           |  |  +--rw interface-identifier?   uint32
+          |  |           |  +--rw segment-type-6
+          |  |           |  |  +--rw local-ipv4-address?    inet:ipv4-address
+          |  |           |  |  +--rw remote-ipv4-address?   inet:ipv4-address
+          |  |           |  +--rw segment-type-7
+          |  |           |  |  +--rw local-ipv6-address?            inet:ipv6-address
+          |  |           |  |  +--rw local-interface-identifier?    uint32
+          |  |           |  |  +--rw remote-ipv6-address?           inet:ipv6-address
+          |  |           |  |  +--rw remote-interface-identifier?   uint32
+          |  |           |  +--rw segment-type-8
+          |  |           |  |  +--rw local-ipv6-address?    inet:ipv6-address
+          |  |           |  |  +--rw remote-ipv6-address?   inet:ipv6-address
+          |  |           |  +--rw segment-type-9
+          |  |           |  |  +--rw ipv6-address?   inet:ipv6-address
+          |  |           |  |  +--rw algorithm?      uint8
+          |  |           |  +--rw segment-type-10
+          |  |           |  |  +--rw local-ipv6-address?            inet:ipv6-address
+          |  |           |  |  +--rw local-interface-identifier?    uint32
+          |  |           |  |  +--rw remote-ipv6-address?           inet:ipv6-address
+          |  |           |  |  +--rw remote-interface-identifier?   uint32
+          |  |           |  +--rw segment-type-11
+          |  |           |     +--rw local-ipv6-address?    inet:ipv6-address
+          |  |           |     +--rw remote-ipv6-address?   inet:ipv6-address
+          |  |           +--rw validate?        boolean
+          |  +--rw explicit-binding-sid-rules* [index]
+          |     +--rw index    uint32
+          |     +--rw rule?    sr-policy-types:explicit-binding-sid-rule-type
+          +--rw policies
+             +--rw policy* [color endpoint]
+                +--rw color               uint32
+                +--rw endpoint            inet:ip-address
+                +--rw name?               string
+                +--rw description?        string
+                +--rw admin-state?        sr-policy-types:policy-admin-state
+                +--rw priority?           uint8
+                +--ro oper-state?         sr-policy-types:policy-oper-state
+                +--ro transition-count?   uint32
+                +--ro up-time?            yang:date-and-time
+                +--ro down-time?          yang:date-and-time
+                +--rw binding-sid
+                |  +--rw dataplane?       sr-policy-types:dataplane-type
+                |  +--rw value?           sr-policy-types:sid-value-type
+                |  +--ro alloc-mode?      sr-policy-types:binding-sid-alloc-mode
+                |  +--ro allocated-sid?   sr-policy-types:sid-value-type
+                |  +--ro oper-state?      sr-policy-types:binding-sid-oper-state
+                +--ro counters
+                |  +--ro pkts?     yang:counter64
+                |  +--ro octets?   yang:counter64
+                +--rw candidate-paths
+                   +--rw candidate-path* [protocol-origin originator discriminator]
+                      +--rw protocol-origin           sr-policy-types:protocol-origin-type
+                      +--rw originator                string
+                      +--rw discriminator             uint32
+                      +--rw name?                     string
+                      +--rw preference?               uint32
+                      +--rw description?              string
+                      +--rw binding-sid {capability-candidate-path-binding-sid}?
+                      |  +--rw dataplane?   sr-policy-types:dataplane-type
+                      |  +--rw value?       sr-policy-types:sid-value-type
+                      +--ro is-best-candidate-path?   boolean
+                      +--ro non-selection-reason?     identityref
+                      +--rw (type)?
+                         +--:(explicit)
+                         |  +--rw segment-lists
+                         |     +--rw segment-list* [name-ref]
+                         |        +--rw name-ref            -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policy-attributes/segment-lists/segment-list/name
+                         |        +--rw weight?             uint32
+                         |        +--ro is-valid?           boolean
+                         |        +--ro forwarding-paths
+                         |           +--ro forwarding-path* [path-id]
+                         |              +--ro path-id               uint8
+                         |              +--ro next-hop-address?     inet:ip-address
+                         |              +--ro next-hop-table-id?    uint32
+                         |              +--ro outgoing-interface?   if:interface-ref
+                         |              +--ro outgoing-sids
+                         |              |  +--ro (dataplanetype)?
+                         |              |     +--:(mpls)
+                         |              |     |  +--ro labels* [label]
+                         |              |     |     +--ro label    rt-types:mpls-label
+                         |              |     +--:(srv6)
+                         |              |        +--ro sids* [sid]
+                         |              |           +--ro sid    srv6-types:srv6-sid
+                         |              +--ro is-protected?         boolean
+                         |              +--ro is-pure-backup?       boolean
+                         |              +--ro backup-path-id?       uint8
+                         |              +--ro weight?               uint32
+                         +--:(dynamic)
+                            +--rw sid-dataplane-type?       sr-policy-types:dataplane-type
+                            +--ro is-valid?                 boolean
+                            +--ro forwarding-paths
+                               +--ro forwarding-path* [path-id]
+                                  +--ro path-id               uint8
+                                  +--ro next-hop-address?     inet:ip-address
+                                  +--ro next-hop-table-id?    uint32
+                                  +--ro outgoing-interface?   if:interface-ref
+                                  +--ro outgoing-sids
+                                  |  +--ro (dataplanetype)?
+                                  |     +--:(mpls)
+                                  |     |  +--ro labels* [label]
+                                  |     |     +--ro label    rt-types:mpls-label
+                                  |     +--:(srv6)
+                                  |        +--ro sids* [sid]
+                                  |           +--ro sid    srv6-types:srv6-sid
+                                  +--ro is-protected?         boolean
+                                  +--ro is-pure-backup?       boolean
+                                  +--ro backup-path-id?       uint8
+                                  +--ro weight?               uint32
+
+  notifications:
+    +---n sr-policy-oper-state-change-event
+    |  +--ro policy-name-ref?         -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/name
+    |  +--ro policy-color-ref?        -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/color
+    |  +--ro policy-endpoint-ref?     -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/endpoint
+    |  +--ro policy-new-oper-state?   sr-policy-types:policy-oper-state
+    |  +--ro policy-down-reason?      identityref
+    +---n sr-policy-candidate-path-change-event
+    |  +--ro policy-name-ref?       -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/name
+    |  +--ro policy-color-ref?      -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/color
+    |  +--ro policy-endpoint-ref?   -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/endpoint
+    |  +--ro existing-preference?   uint32
+    |  +--ro new-preference?        uint32
+    +---n sr-policy-binding-sid-unavailable-event
+    |  +--ro policy-name-ref?                -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/name
+    |  +--ro policy-color-ref?               -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/color
+    |  +--ro policy-endpoint-ref?            -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/endpoint
+    |  +--ro policy-binding-sid-value-ref?   -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/binding-sid/value
+    |  +--ro reason?                         identityref
+    +---n sr-policy-candidate-path-binding-sid-mismatch-event
+       +--ro policy-color-ref?                                    -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/color
+       +--ro policy-endpoint-ref?                                 -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/endpoint
+       +--ro existing-candidate-path-protocol-origin-ref?         -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/candidate-paths/candidate-path/protocol-origin
+       +--ro existing-candidate-path-preference-ref?              -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/candidate-paths/candidate-path/preference
+       +--ro existing-candidate-path-binding-sid-dataplane-ref?   -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/candidate-paths/candidate-path/binding-sid/dataplane
+       +--ro existing-candidate-path-binding-sid-value-ref?       -> /rt:routing/ietf-sr-policy:segment-routing/sr-policy/policies/policy/candidate-paths/candidate-path/binding-sid/value
+       +--ro conflicting-candidate-path-protocol-origin?          uint8
+       +--ro conflicting-candidate-path-preference?               uint32
+       +--ro conflicting-candidate-path-binding-sid-dataplane?    sr-policy-types:dataplane-type
+       +--ro conflicting-candidate-path-binding-sid-value?        sr-policy-types:sid-value-type

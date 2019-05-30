@@ -1,7 +1,11 @@
 module ietf-sr-policy-types {
-  namespace "urn:ietf:params:xml:ns:yang:ietf-sr-policy-types";
+  namespace "urn:ietf:params:xml:ns:yang:ietf-sr-policy";
 
   prefix "ietf-sr-policy-types";
+
+  import ietf-inet-types {
+    prefix "inet";
+  }
 
   import ietf-routing-types {
     prefix "rt-types";
@@ -17,9 +21,6 @@ module ietf-sr-policy-types {
       "WG Web:   <http://tools.ietf.org/wg/spring/>
        WG List:  <mailto:spring@ietf.org>
 
-       Editor:   Johnson Thomas
-                 <maito:thjohns2@cisco.com>
-
        Editor:   Kamran Raza
                  <mailto:skraza@cisco.com>
 
@@ -28,6 +29,7 @@ module ietf-sr-policy-types {
 
        Editor:   Daniel Voyer
                  <mailto:daniel.voyer@bell.ca>
+
 
        Editor:   Muhammad Durrani
                  <mailto:mdurrani@equinix.com>
@@ -317,7 +319,8 @@ module ietf-sr-policy-types {
         description "CLI, Yang model via Netconf, gRPC, etc used for candidate path instantiation";
       }
     }
-    description "Originating Protocol type";
+
+    description "Originating protocol type";
   }
 
   typedef explicit-binding-sid-rule-type {
@@ -338,5 +341,4 @@ module ietf-sr-policy-types {
     }
     description "Explicit binding sid rule types";
   }
-}
-
+} // module

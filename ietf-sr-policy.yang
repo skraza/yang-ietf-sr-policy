@@ -38,9 +38,6 @@ module ietf-sr-policy {
       "WG Web:   <http://tools.ietf.org/wg/spring/>
        WG List:  <mailto:spring@ietf.org>
 
-       Editor:   Johnson Thomas
-                 <maito:thjohns2@cisco.com>
-
        Editor:   Kamran Raza
                  <mailto:skraza@cisco.com>
 
@@ -315,7 +312,7 @@ module ietf-sr-policy {
       config false;
       description
          "Counters containing stats related to forwarding";
-     
+
       leaf pkts {
         type yang:counter64;
         description "Number of packets forwarded";
@@ -338,7 +335,7 @@ module ietf-sr-policy {
     }
     leaf allocated-sid {
       type sr-policy-types:sid-value-type;
-      config false;	    
+      config false;
       description "Allocated SID value for the Binding SID";
     }
     leaf oper-state {
@@ -465,7 +462,7 @@ module ietf-sr-policy {
         }
         leaf is-valid {
           type boolean;
-	  config false;
+          config false;
           description
             "True if the segment-list is valid, False otherwise";
         }
@@ -735,7 +732,6 @@ module ietf-sr-policy {
        "This augments routing-instance configuration with segment-routing sr-policy.";
     container segment-routing {
       description "Main segment routing container";
-
       container sr-policy {
         description "SR policy main container";
 
@@ -897,7 +893,6 @@ module ietf-sr-policy {
    }
 
    leaf existing-candidate-path-binding-sid-dataplane-ref {
-     if-feature capability-candidate-path-binding-sid;
      type leafref {
       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:binding-sid/ietf-sr-policy:dataplane";
      }
@@ -905,7 +900,6 @@ module ietf-sr-policy {
    }
 
    leaf existing-candidate-path-binding-sid-value-ref {
-     if-feature capability-candidate-path-binding-sid;
      type leafref {
       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:binding-sid/ietf-sr-policy:value";
      }
@@ -940,4 +934,4 @@ module ietf-sr-policy {
       "This feature enables the capability of specifying binding-sid
        for a candidate path.";
   }
-}
+} // module
