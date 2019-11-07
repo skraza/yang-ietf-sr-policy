@@ -2,7 +2,7 @@ module ietf-sr-policy {
 
   namespace "urn:ietf:params:xml:ns:yang:ietf-sr-policy";
 
-  prefix "ietf-sr-policy";
+  prefix "sr-policy";
 
   import ietf-inet-types {
     prefix "inet";
@@ -53,13 +53,16 @@ module ietf-sr-policy {
 
        Editor:   Satoru Matsushima
                  <mailto:satoru.matsushima@g.softbank.co.jp>
+
+       Editor:   Pavan Vishnu Beeram
+                 <mailto:vbeeram@juniper.net>
        ";
 
   description
     "This module contains a collection of YANG definitions
      for SR policy module.
 
-     Copyright (c) 2018 IETF Trust and the persons identified as
+     Copyright (c) 2019 IETF Trust and the persons identified as
      authors of the code.  All rights reserved.
 
      Redistribution and use in source and binary forms, with or
@@ -69,11 +72,25 @@ module ietf-sr-policy {
      Relating to IETF Documents
      (http://trustee.ietf.org/license-info).";
 
+  revision "2019-11-04" {
+    description
+      "Changes in keys for policy and its candidate paths";
+    reference
+      "draft-raza-spring-sr-policy-yang";
+  }
+  
+  revision "2019-07-08" {
+    description
+      "Dynamic TE candidate-path support";
+    reference
+      "draft-raza-spring-sr-policy-yang";
+  }
+  
   revision "2018-07-01" {
     description
       "Initial version";
     reference
-      "draft-ietf-spring-segment-routing-policy";
+      "draft-raza-spring-sr-policy-yang";
   }
 
   grouping segment_config {
@@ -251,16 +268,16 @@ module ietf-sr-policy {
     uses segment_config;
   }
 
-  grouping policy-attributes {
+  grouping attributes {
     description
       "Grouping containing attributes applicable to all SR policies";
 
-    container policy-attributes {
+    container attributes {
       description
-         "Attributes applicable to all SR policies";
+         "Attributes applicable to SR policies";
 
+      uses affinity-mapping;
       uses segment-lists;
-
       uses explicit-binding-sid-rules;
     }
   }
@@ -404,11 +421,11 @@ module ietf-sr-policy {
       type uint32;
       description "Table ID for nexthop address";
     }
-    leaf outgoing-interface {
+    leaf interface {
       type if:interface-ref;
       description "Outgoing interface handle";
     }
-    container outgoing-sids {
+    container sid-list {
       description
         "Outgoing sid stack";
       choice dataplanetype {
@@ -440,6 +457,30 @@ module ietf-sr-policy {
     }
   }
 
+  grouping cpath-cmn-properties {
+    description
+      "Common properties of the candidate path";
+    
+    leaf is-valid {
+          type boolean;
+          config false;
+          description
+            "True if the segment-list is valid, False otherwise";
+
+    }
+
+    container forwarding-paths {
+          config false;
+          description
+            "Forwarding state of paths";
+          list forwarding-path {
+            key "path-id";
+            description "Forwarding path";
+            uses path-forwarding_state;
+          }
+    }
+}
+
   grouping explicit-path-properties {
     description
       "Explicit path properties of the candidate path";
@@ -452,7 +493,7 @@ module ietf-sr-policy {
 
         leaf name-ref {
           type leafref {
-            path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policy-attributes/ietf-sr-policy:segment-lists/ietf-sr-policy:segment-list/ietf-sr-policy:name";
+            path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:attributes/sr-policy:segment-lists/sr-policy:segment-list/sr-policy:name";
           }
           description "Reference to segment-list name";
         }
@@ -460,26 +501,35 @@ module ietf-sr-policy {
           type uint32;
           description "Segment-list weighted loadshare";
         }
-        leaf is-valid {
-          type boolean;
-          config false;
+      }
+     }
+   }
+
+  grouping affinity-mapping {
+    description "Affinity-map grouping";
+    
+    container affinity-map {
+      description
+        "Mapping of affinity names to bit position";
+      list affinity {	
+        key "name";
+        unique "bit-position";
+        leaf name {
+          type string;
           description
-            "True if the segment-list is valid, False otherwise";
+            "Name of the affinity";
         }
-        container forwarding-paths {
-          config false;
+        leaf bit-position {
+          type uint16;
           description
-            "Forwarding state of paths";
-          list forwarding-path {
-            key "path-id";
-            description "Forwarding path";
-            uses path-forwarding_state;
-          }
+            "The affinity entry in this list is mapped to the this bit-position in the
+             affinity bitmap";
         }
+
+        description "Affinity";
       }
     }
   }
-
   grouping dynamic-path-properties {
     description
       "Dynamic path properties of the candidate path";
@@ -488,21 +538,78 @@ module ietf-sr-policy {
       description
         "The dataplane type for the sid";
     }
-    leaf is-valid {
-      type boolean;
-      config false;
-      description
-        "True if the segment-list is valid, False otherwise";
-    }
-    container forwarding-paths {
-      config false;
-      description
-        "Forwarding state of paths";
-      list forwarding-path {
-        key "path-id";
-        description "Forwarding path";
-        uses path-forwarding_state;
-      }
+
+    container constraints {
+      description "Constraints for the dynamic path computation";
+        container affinities {
+          description "Affinity constraints on the computed dynamic path";
+          leaf-list exclude-any {
+            type string; 
+            description 
+              "The link is excluded if it has any of these affinities.";
+          }
+          leaf-list include-any {
+            type string;
+            description
+              "The link is accepted if it has any of these affinities"; 
+          }
+          leaf-list include-all {
+            type string;
+            description
+              "The link is accepted if it has all these affinities";
+          }
+        }
+
+        container bounds {
+          description "Upper-bound constraints on the computed dynamic path";
+          leaf igp-metric-bound {
+            type uint32;
+            description
+              "Path is invalid if its IGP metric exceeds this value";
+          }
+          leaf te-metric-bound {
+            type uint32;
+            description
+              "Path is invalid if its TE metric exceeds this value";
+          }
+          leaf latency-metric-bound {
+            type uint32;
+            units "microsecond";
+            description
+              "Path is invalid if its latency exceeds this value";
+          }
+          leaf segment-bound {
+            type uint32;
+            description
+              "Path is invalid if it has more segments than this value";
+          }
+        }
+        container segment-rules {
+          description "Constraints on the segments to be used in the path";
+          leaf sid-algorithm {
+            type uint8 {
+              range "128..255";
+            }
+            description
+              "The prefix-sid algorithm to be used in path calculation";
+          }
+        }
+        container disjoint-path {
+          description "Path disjointness constraints";
+          leaf group-id {
+            type uint32 { range "1..65535"; }
+            description "";
+          }
+          leaf disjointness-type {
+            type identityref { base sr-policy-types:path-disjointness; } 
+            description
+              "Type of disjointness computation used to find the path";
+          }
+          leaf subgroup-id {
+            type uint32 { range "1..65535"; }
+            description "";
+          }
+        }
     }
   }
 
@@ -615,33 +722,40 @@ module ietf-sr-policy {
 
       list candidate-path {
         key "protocol-origin originator discriminator";
+	unique "preference";
+	
         description "SR policy Candidate path(s) list entry";
 
         leaf protocol-origin {
           type sr-policy-types:protocol-origin-type;
+	  mandatory true;
           description
             "Instantiation mechanism used to create the candidate path";
         }
         leaf originator {
           type string;
+	  mandatory true;
           description
             "Identifier (concatenation of ASN and node-address) of the node
              that signalled/instantiated the candidate path on headend";
         }
         leaf discriminator {
           type uint32;
+	  mandatory true;
           description "Candidate path distinguisher";
         }
-        leaf name {
-          type string;
-          description "Candidate path name";
-        }
+
         leaf preference {
           type uint32 {
             range "1..65535";
           }
+	  mandatory true;
           description "Candidate path preference";
         }
+        leaf name {
+          type string;
+          description "Candidate path name";
+        }	
         leaf description {
           type string;
           description "Candidate path description";
@@ -652,8 +766,10 @@ module ietf-sr-policy {
             "Binding segment ID";
          uses binding-sid_config;
         }
-        uses candidate-path_state;
+	
         uses candidate-path-type;
+        uses candidate-path_state;
+	uses cpath-cmn-properties;
       }
     }
   }
@@ -666,16 +782,18 @@ module ietf-sr-policy {
       list policy {
         key "color endpoint";
         unique "name";
+      
         description "SR Policy properties";
-
         leaf color {
           type uint32 {
             range "1..4294967295";
           }
+	  mandatory true;
           description "Color associated with the policy";
         }
         leaf endpoint {
           type inet:ip-address;
+	  mandatory true;
           description "Policy end point IP address";
         }
         leaf name {
@@ -732,10 +850,10 @@ module ietf-sr-policy {
        "This augments routing-instance configuration with segment-routing sr-policy.";
     container segment-routing {
       description "Main segment routing container";
-      container sr-policy {
-        description "SR policy main container";
-
-        uses policy-attributes;
+      container traffic-engineering {
+        description "Traffic-engineering container";
+        
+        uses attributes;
 
         uses policies;
       }
@@ -750,21 +868,21 @@ module ietf-sr-policy {
 
    leaf policy-name-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:name";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:name";
      }
      description "Reference to sr-policy name";
    }
 
    leaf policy-color-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:color";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:color";
      }
      description "Reference to sr-policy color";
    }
 
    leaf policy-endpoint-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:endpoint";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:endpoint";
      }
      description "Reference to sr-policy endpoint";
    }
@@ -788,21 +906,21 @@ module ietf-sr-policy {
 
    leaf policy-name-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:name";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:name";
      }
      description "Reference to sr-policy name";
    }
 
    leaf policy-color-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:color";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:color";
      }
      description "Reference to sr-policy color";
    }
 
    leaf policy-endpoint-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:endpoint";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:endpoint";
      }
      description "Reference to sr-policy endpoint";
    }
@@ -824,28 +942,28 @@ module ietf-sr-policy {
 
    leaf policy-name-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:name";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:name";
      }
      description "Reference to sr-policy name";
    }
 
    leaf policy-color-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:color";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:color";
      }
      description "Reference to sr-policy color";
    }
 
    leaf policy-endpoint-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:endpoint";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:endpoint";
      }
      description "Reference to sr-policy endpoint";
    }
 
    leaf policy-binding-sid-value-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:binding-sid/ietf-sr-policy:value";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:binding-sid/sr-policy:value";
      }
      description "Reference to sr-policy binding-sid value";
    }
@@ -866,42 +984,42 @@ module ietf-sr-policy {
 
    leaf policy-color-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:color";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:color";
      }
      description "Reference to sr-policy color";
    }
 
    leaf policy-endpoint-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:endpoint";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:endpoint";
      }
      description "Reference to sr-policy endpoint";
    }
 
    leaf existing-candidate-path-protocol-origin-ref {
      type leafref {
-       path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:protocol-origin";
+       path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path/sr-policy:protocol-origin";
      }
      description "Reference to existing candidate path protocol origin";
    }
 
    leaf existing-candidate-path-preference-ref {
      type leafref {
-      path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:preference";
+      path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path/sr-policy:preference";
      }
      description "Reference to existing candidate path preference";
    }
 
    leaf existing-candidate-path-binding-sid-dataplane-ref {
      type leafref {
-      path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:binding-sid/ietf-sr-policy:dataplane";
+      path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path/sr-policy:binding-sid/sr-policy:dataplane";
      }
      description "Reference to existing candidate path binding sid dataplane type";
    }
 
    leaf existing-candidate-path-binding-sid-value-ref {
      type leafref {
-      path "/rt:routing/ietf-sr-policy:segment-routing/ietf-sr-policy:sr-policy/ietf-sr-policy:policies/ietf-sr-policy:policy/ietf-sr-policy:candidate-paths/ietf-sr-policy:candidate-path/ietf-sr-policy:binding-sid/ietf-sr-policy:value";
+      path "/rt:routing/sr-policy:segment-routing/sr-policy:traffic-engineering/sr-policy:policies/sr-policy:policy/sr-policy:candidate-paths/sr-policy:candidate-path/sr-policy:binding-sid/sr-policy:value";
      }
      description "Reference to existing candidate path binding sid value";
    }

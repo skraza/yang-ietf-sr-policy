@@ -1,7 +1,7 @@
 module ietf-sr-policy-types {
-  namespace "urn:ietf:params:xml:ns:yang:ietf-sr-policy";
+  namespace "urn:ietf:params:xml:ns:yang:ietf-sr-policy-types";
 
-  prefix "ietf-sr-policy-types";
+  prefix "sr-policy-types";
 
   import ietf-inet-types {
     prefix "inet";
@@ -20,31 +20,25 @@ module ietf-sr-policy-types {
   contact
       "WG Web:   <http://tools.ietf.org/wg/spring/>
        WG List:  <mailto:spring@ietf.org>
-
        Editor:   Kamran Raza
                  <mailto:skraza@cisco.com>
-
        Editor:   Zhuang Shunwan
                  <mailto:zhuangshunwa@huawei.com>
-
        Editor:   Daniel Voyer
                  <mailto:daniel.voyer@bell.ca>
-
-
        Editor:   Muhammad Durrani
                  <mailto:mdurrani@equinix.com>
-
        Editor:   Satoru Matsushima
                  <mailto:satoru.matsushima@g.softbank.co.jp>
+       Editor:   Pavan Vishnu Beeram
+                 <mailto:vbeeram@juniper.net>
        ";
 
   description
     "This YANG module defines the essential types for the management
      of SR policy module.
-
-     Copyright (c) 2018 IETF Trust and the persons identified as
+     Copyright (c) 2019 IETF Trust and the persons identified as
      authors of the code.  All rights reserved.
-
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject
      to the license terms contained in, the Simplified BSD License
@@ -52,11 +46,25 @@ module ietf-sr-policy-types {
      Relating to IETF Documents
      (http://trustee.ietf.org/license-info).";
 
+  revision "2019-11-04" {
+    description
+      "New editor added";
+    reference
+      "draft-raza-spring-sr-policy-yang";
+  }
+
+  revision "2019-07-08" {
+    description
+      "Dynamic TE candidate-path support";
+    reference
+      "draft-raza-spring-sr-policy-yang";
+  }
+  
   revision "2018-07-01" {
     description
       "Initial version";
     reference
-      "draft-ietf-spring-segment-routing-policy";
+      "draft-raza-spring-sr-policy-yang";
   }
 
   /* Identities */
@@ -162,6 +170,27 @@ module ietf-sr-policy-types {
   identity binding-sid-outside-srlb-range {
     base binding-sid-unavailable-reason;
     description "Binding sid outside SRLB range";
+  }
+
+  identity path-disjointness {
+    description
+      "Base identity for the type of path disjointness computation";
+  }
+  identity path-disjointness-link {
+    base path-disjointness;
+    description "The computed path is link-disjoint with the existing path";
+  }
+  identity path-disjointness-node {
+    base path-disjointness;
+    description "The computed path is node-disjoint with the existing path";
+  }
+  identity path-disjointness-srlg {
+    base path-disjointness;
+    description "The computed path is srlg-disjoint with the existing path";
+  }
+  identity path-disjointness-srlg-node {
+    base path-disjointness;
+    description "The computed path is node and srlg disjoint with the existing path";
   }
 
   /* Typdefs */
@@ -342,3 +371,4 @@ module ietf-sr-policy-types {
     description "Explicit binding sid rule types";
   }
 } // module
+
